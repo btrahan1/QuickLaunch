@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickLaunch</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icon.png">
+    <link rel="apple-touch-icon" href="icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Bebas+Neue&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #818cf8;
+            --accent: #c084fc;
+            --bg: #030712;
+            --card-bg: rgba(30, 41, 59, 0.4);
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+            --glow: rgba(129, 140, 248, 0.5);
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg);
+            background-image: 
+                radial-gradient(circle at 50% 10%, rgba(129, 140, 248, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 10% 90%, rgba(192, 132, 252, 0.1) 0%, transparent 40%);
+            color: var(--text);
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 440px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', cursive;
+            font-size: 3.5rem;
+            letter-spacing: 4px;
+            margin: 0;
+            background: linear-gradient(135deg, #fff 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px rgba(129, 140, 248, 0.3));
+        }
+
+        .mic-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            margin: 0 auto;
+        }
+
+        .mic-btn {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(129, 140, 248, 0.3);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3.5rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            z-index: 2;
+            position: relative;
+        }
+
+        .mic-btn::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid var(--primary);
+            opacity: 0;
+            animation: none;
+        }
+
+        .mic-btn.listening::after {
+            opacity: 1;
+            animation: ring-pulse 1.5s infinite;
+        }
+
+        @keyframes ring-pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            100% { transform: scale(1.6); opacity: 0; }
+        }
+
+        .status-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            height: 2em;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+
+        .status-text.active {
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--glow);
+        }
+
+        /* App Grid (Mini Icons) */
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            padding: 24px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .app-icon {
+            aspect-ratio: 1;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .app-icon:hover {
+            background: rgba(129, 140, 248, 0.1);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Launching Modal */
+        #launchingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .launch-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .launch-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            box-shadow: 0 0 15px var(--primary);
+            transition: width 1s linear;
+        }
+
+        .add-btn {
+            background: none;
+            border: 1px dashed var(--text-muted);
+            color: var(--text-muted);
+            border-radius: 12px;
+            padding: 8px 16px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .add-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Modal / Form */
+        #addModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(10px);
+            z-index: 150;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 32px;
+            border-radius: 28px;
+            width: 90%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 14px;
+            border-radius: 14px;
+            color: white;
+            font-family: inherit;
+            outline: none;
+        }
+
+        input:focus { border-color: var(--primary); }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+        }
+
+        .primary-btn {
+            flex: 1;
+            background: var(--primary);
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            color: white;
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        .secondary-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            padding: 14px;
+            border-radius: 14px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>QUICK LAUNCH</h1>
+
+        <div id="status" class="status-text">Tap to Speak</div>
+
+        <div class="mic-container">
+            <button id="micBtn" class="mic-btn">🎙️</button>
+        </div>
+
+        <div>
+            <div id="appGrid" class="app-grid">
+                <!-- App items injected here -->
+            </div>
+            <button class="add-btn" style="margin-top: 16px;" onclick="openModal()">+ ADD CUSTOM APP</button>
+        </div>
+    </div>
+
+    <!-- Modal for Adding Custom App -->
+    <div id="addModal">
+        <div class="modal-content">
+            <h2 style="margin: 0; font-size: 1.5rem;">Add Shortcut</h2>
+            <p style="color: var(--text-muted); font-size: 0.8rem; margin: 0 0 10px;">Example URI: appname://</p>
+            <input type="text" id="customName" placeholder="App Name (Voice Command)">
+            <input type="text" id="customIcon" placeholder="Emoji Icon (e.g. 🎮)">
+            <input type="text" id="customUri" placeholder="URI Scheme (e.g. game://)">
+            <div class="btn-group">
+                <button class="secondary-btn" onclick="closeModal()">CANCEL</button>
+                <button class="primary-btn" onclick="saveCustomApp()">SAVE APP</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Full screen launching overlay -->
+    <div id="launchingOverlay">
+        <div style="font-size: 3rem;" id="launchIcon">🚀</div>
+        <div style="font-size: 1.5rem; font-weight: 800;" id="launchName">LAUNCHING...</div>
+        <div class="launch-progress">
+            <div id="launchBar" class="launch-bar"></div>
+        </div>
+        <button class="add-btn" onclick="cancelLaunch()" style="margin-top: 20px;">CANCEL</button>
+    </div>
+
+    <script>
+        const APP_MAP = {
+            'netflix': { icon: '🍿', uri: 'nflx://', name: 'Netflix' },
+            'youtube': { icon: '📺', uri: 'youtube://', name: 'YouTube' },
+            'disney': { icon: '🏰', uri: 'disneyplus://', name: 'Disney+' },
+            'hbo': { icon: '🎬', uri: 'https://play.max.com/', name: 'Max' },
+            'amazon': { icon: '📦', uri: 'amazon://', name: 'Amazon Shopping' },
+            'spotify': { icon: '🎵', uri: 'spotify://', name: 'Spotify' },
+            'facebook': { icon: '👥', uri: 'fb://', name: 'Facebook' },
+            'instagram': { icon: '📸', uri: 'instagram://', name: 'Instagram' },
+            'twitter': { icon: '🐦', uri: 'twitter://', name: 'X' },
+            'mail': { icon: '✉️', uri: 'mailto:', name: 'Mail' },
+            'maps': { icon: '📍', uri: 'maps://', name: 'Maps' },
+            'messages': { icon: '💬', uri: 'sms:', name: 'Messages' },
+            'notes': { icon: '📝', uri: 'mobilenotes://', name: 'Notes' },
+            'settings': { icon: '⚙️', uri: 'App-Prefs:', name: 'Settings' }
+        };
+
+        // UI Prep
+        const micBtn = document.getElementById('micBtn');
+        const status = document.getElementById('status');
+        const overlay = document.getElementById('launchingOverlay');
+        const grid = document.getElementById('appGrid');
+        let launchTimeout;
+
+        // Load Custom Apps
+        function loadCustomApps() {
+            const customs = JSON.parse(localStorage.getItem('quicklaunch_customs') || '{}');
+            Object.assign(APP_MAP, customs);
+        }
+
+        // Render Grid
+        function renderGrid() {
+            grid.innerHTML = '';
+            Object.entries(APP_MAP).forEach(([id, data]) => {
+                const div = document.createElement('div');
+                div.className = 'app-icon';
+                div.innerText = data.icon;
+                div.title = data.name;
+                div.onclick = () => launchApp(data);
+                grid.appendChild(div);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            loadCustomApps();
+            renderGrid();
+            
+            // PWA / Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js');
+            }
+        });
+
+        // Speech Recognition
+        let recognition;
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            
+            recognition.onstart = () => {
+                micBtn.classList.add('listening');
+                status.innerText = "Listening...";
+                status.classList.add('active');
+            };
+
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript.toLowerCase();
+                status.innerText = `"${text}"`;
+                findAndLaunch(text);
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('listening');
+                status.classList.remove('active');
+            };
+        }
+
+        micBtn.onclick = () => {
+            if (recognition) recognition.start();
+        };
+
+        function findAndLaunch(text) {
+            // Fuzzy search the map keys
+            const keys = Object.keys(APP_MAP);
+            const match = keys.find(k => text.includes(k));
+            
+            if (match) {
+                launchApp(APP_MAP[match]);
+            } else {
+                status.innerText = "App not found...";
+                setTimeout(() => status.innerText = "Tap to Speak", 2000);
+            }
+        }
+
+        function launchApp(app) {
+            document.getElementById('launchIcon').innerText = app.icon;
+            document.getElementById('launchName').innerText = `LAUNCHING ${app.name.toUpperCase()}...`;
+            overlay.style.display = 'flex';
+            
+            // Start progress bar
+            const bar = document.getElementById('launchBar');
+            bar.style.transition = 'none';
+            bar.style.width = '0%';
+            setTimeout(() => {
+                bar.style.transition = 'width 1s linear';
+                bar.style.width = '100%';
+            }, 10);
+
+            launchTimeout = setTimeout(() => {
+                window.location.href = app.uri;
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    bar.style.width = '0%';
+                }, 500);
+            }, 1100);
+            
+            if (window.navigator.vibrate) window.navigator.vibrate([10, 50, 10]);
+        }
+
+        function cancelLaunch() {
+            clearTimeout(launchTimeout);
+            overlay.style.display = 'none';
+            status.innerText = "Launch Cancelled";
+            setTimeout(() => status.innerText = "Tap to Speak", 2000);
+        }
+
+        // Modal Logic
+        function openModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('addModal').style.display = 'none'; }
+
+        function saveCustomApp() {
+            const name = document.getElementById('customName').value.trim();
+            const icon = document.getElementById('customIcon').value.trim() || '🚀';
+            const uri = document.getElementById('customUri').value.trim();
+
+            if (!name || !uri) return alert('Name and URI required');
+
+            const customs = JSON.parse(localStorage.getItem('quicklaunch_customs') || '{}');
+            customs[name.toLowerCase()] = { icon, uri, name };
+            localStorage.setItem('quicklaunch_customs', JSON.stringify(customs));
+            
+            Object.assign(APP_MAP, customs);
+            renderGrid();
+            closeModal();
+            
+            // Clear inputs
+            document.getElementById('customName').value = '';
+            document.getElementById('customIcon').value = '';
+            document.getElementById('customUri').value = '';
+        }
+    </script>
+</body>
+</html>
