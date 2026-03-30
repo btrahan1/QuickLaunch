@@ -156,13 +156,47 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: var(--bg);
+            background: rgba(3, 7, 18, 0.95);
+            backdrop-filter: blur(20px);
             z-index: 100;
             display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             gap: 20px;
+        }
+
+        .launch-btn {
+            width: 150px;
+            height: 150px;
+            border-radius: 40px;
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            cursor: pointer;
+            box-shadow: 0 0 30px var(--glow);
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .launch-btn:active {
+            transform: scale(0.9);
+            background: var(--primary);
+        }
+
+        .launch-btn::after {
+            content: 'TAP TO LAUNCH';
+            position: absolute;
+            bottom: -30px;
+            font-size: 0.8rem;
+            width: 100%;
+            text-align: center;
+            color: var(--primary);
+            font-weight: 800;
+            letter-spacing: 1px;
         }
 
         .launch-progress {
@@ -299,12 +333,14 @@
 
     <!-- Full screen launching overlay -->
     <div id="launchingOverlay">
-        <div style="font-size: 3rem;" id="launchIcon">🚀</div>
-        <div style="font-size: 1.5rem; font-weight: 800;" id="launchName">LAUNCHING...</div>
+        <div class="launch-btn" id="launchBtn">
+            <span id="launchIcon">🚀</span>
+        </div>
+        <div style="font-size: 1.5rem; font-weight: 800; margin-top: 40px;" id="launchName">LAUNCHING...</div>
         <div class="launch-progress">
             <div id="launchBar" class="launch-bar"></div>
         </div>
-        <button class="add-btn" onclick="cancelLaunch()" style="margin-top: 20px;">CANCEL</button>
+        <button class="add-btn" onclick="cancelLaunch()" style="margin-top: 40px;">CANCEL</button>
     </div>
 
     <script>
@@ -396,24 +432,38 @@
             const match = keys.find(k => text.includes(k));
             
             if (match) {
-                launchApp(APP_MAP[match]);
+                launchApp(APP_MAP[match], false); // False = Use countdown for voice
             } else {
                 status.innerText = "App not found...";
                 setTimeout(() => status.innerText = "Tap to Speak", 2000);
             }
         }
 
-        function launchApp(app) {
+        function launchApp(app, immediate = false) {
+            if (immediate) {
+                // Direct jump to bypass mobile browser security
+                window.location.href = app.uri;
+                return;
+            }
+
+            // Voice Command Flow (Countdown)
             document.getElementById('launchIcon').innerText = app.icon;
             document.getElementById('launchName').innerText = `LAUNCHING ${app.name.toUpperCase()}...`;
             overlay.style.display = 'flex';
             
+            // Set up direct click for mobile "Direct-User-Action" bypass during countdown
+            document.getElementById('launchBtn').onclick = () => {
+                clearTimeout(launchTimeout);
+                window.location.href = app.uri;
+                setTimeout(() => overlay.style.display = 'none', 1000);
+            };
+
             // Start progress bar
             const bar = document.getElementById('launchBar');
             bar.style.transition = 'none';
             bar.style.width = '0%';
             setTimeout(() => {
-                bar.style.transition = 'width 1s linear';
+                bar.style.transition = 'width 1.5s linear';
                 bar.style.width = '100%';
             }, 10);
 
@@ -423,7 +473,7 @@
                     overlay.style.display = 'none';
                     bar.style.width = '0%';
                 }, 500);
-            }, 1100);
+            }, 1600);
             
             if (window.navigator.vibrate) window.navigator.vibrate([10, 50, 10]);
         }
