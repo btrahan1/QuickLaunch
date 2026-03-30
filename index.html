@@ -301,7 +301,7 @@
 
     <div class="container">
         <h1>QUICK LAUNCH</h1>
-        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: -30px; margin-bottom: 30px; letter-spacing: 2px;">V1.1.3</div>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: -30px; margin-bottom: 30px; letter-spacing: 2px;">V1.1.4</div>
 
         <div id="status" class="status-text">Tap to Speak</div>
 
@@ -349,6 +349,7 @@
             'netflix': { icon: '🍿', uri: 'https://www.netflix.com/browse', name: 'Netflix' },
             'youtube': { icon: '📺', uri: 'https://www.youtube.com', name: 'YouTube' },
             'disney': { icon: '🏰', uri: 'https://www.disneyplus.com/home', name: 'Disney+' },
+            'prime': { icon: '🎬', uri: 'https://www.primevideo.com', name: 'Prime Video' },
             'hbo': { icon: '🎬', uri: 'https://play.max.com/', name: 'Max' },
             'amazon': { icon: '📦', uri: 'https://www.amazon.com', name: 'Amazon Shopping' },
             'spotify': { icon: '🎵', uri: 'https://open.spotify.com', name: 'Spotify' },
@@ -449,6 +450,8 @@
                     targetUri = 'intent://www.netflix.com/browse#Intent;scheme=https;package=com.netflix.mediaclient;end';
                 } else if (app.name === 'Disney+') {
                     targetUri = 'intent://www.disneyplus.com/home#Intent;scheme=https;package=com.disney.disneyplus;end';
+                } else if (app.name === 'Prime Video') {
+                    targetUri = 'intent://www.primevideo.com#Intent;scheme=https;package=com.amazon.avod.thirdpartyclient;end';
                 }
             }
 
