@@ -22,11 +22,6 @@
         }
 
         body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
             margin: 0;
             font-family: 'Outfit', sans-serif;
             background-color: var(--bg);
@@ -34,13 +29,15 @@
                 radial-gradient(circle at 50% 10%, rgba(129, 140, 248, 0.15) 0%, transparent 40%),
                 radial-gradient(circle at 10% 90%, rgba(192, 132, 252, 0.1) 0%, transparent 40%);
             color: var(--text);
-            padding: 20px;
+            padding: 40px 20px;
             box-sizing: border-box;
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            min-height: 100vh;
         }
 
+        /* Update container for better scrolling */
         .container {
             width: 100%;
             max-width: 440px;
@@ -48,6 +45,7 @@
             display: flex;
             flex-direction: column;
             gap: 40px;
+            margin: 0 auto;
         }
 
         h1 {
@@ -303,6 +301,7 @@
 
     <div class="container">
         <h1>QUICK LAUNCH</h1>
+        <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: -30px; margin-bottom: 30px; letter-spacing: 2px;">V1.1</div>
 
         <div id="status" class="status-text">Tap to Speak</div>
 
@@ -384,7 +383,7 @@
                 div.className = 'app-icon';
                 div.innerText = data.icon;
                 div.title = data.name;
-                div.onclick = () => launchApp(data);
+                div.onclick = () => launchApp(data, true); // True = Immediate for direct taps
                 grid.appendChild(div);
             });
         }
@@ -429,7 +428,6 @@
         };
 
         function findAndLaunch(text) {
-            // Fuzzy search the map keys
             const keys = Object.keys(APP_MAP);
             const match = keys.find(k => text.includes(k));
             
@@ -442,9 +440,20 @@
         }
 
         function launchApp(app, immediate = false) {
+            let targetUri = app.uri;
+
+            // Android Power-Launch (Intents)
+            const isAndroid = /android/i.test(navigator.userAgent);
+            if (isAndroid) {
+                if (app.name === 'Netflix') {
+                    targetUri = 'intent://www.netflix.com/browse#Intent;scheme=https;package=com.netflix.mediaclient;end';
+                } else if (app.name === 'Disney+') {
+                    targetUri = 'intent://www.disneyplus.com/home#Intent;scheme=https;package=com.disney.disneyplus;end';
+                }
+            }
+
             if (immediate) {
-                // Direct jump to bypass mobile browser security
-                window.location.href = app.uri;
+                window.location.href = targetUri;
                 return;
             }
 
@@ -456,11 +465,10 @@
             // Set up direct click for mobile "Direct-User-Action" bypass during countdown
             document.getElementById('launchBtn').onclick = () => {
                 clearTimeout(launchTimeout);
-                window.location.href = app.uri;
+                window.location.href = targetUri;
                 setTimeout(() => overlay.style.display = 'none', 1000);
             };
 
-            // Start progress bar
             const bar = document.getElementById('launchBar');
             bar.style.transition = 'none';
             bar.style.width = '0%';
@@ -470,7 +478,7 @@
             }, 10);
 
             launchTimeout = setTimeout(() => {
-                window.location.href = app.uri;
+                window.location.href = targetUri;
                 setTimeout(() => {
                     overlay.style.display = 'none';
                     bar.style.width = '0%';
