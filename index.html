@@ -36,7 +36,9 @@
             color: var(--text);
             padding: 20px;
             box-sizing: border-box;
-            overflow: hidden;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
 
         .container {
@@ -345,9 +347,9 @@
 
     <script>
         const APP_MAP = {
-            'netflix': { icon: '🍿', uri: 'https://www.netflix.com', name: 'Netflix' },
+            'netflix': { icon: '🍿', uri: 'https://www.netflix.com/browse', name: 'Netflix' },
             'youtube': { icon: '📺', uri: 'https://www.youtube.com', name: 'YouTube' },
-            'disney': { icon: '🏰', uri: 'https://www.disneyplus.com', name: 'Disney+' },
+            'disney': { icon: '🏰', uri: 'https://www.disneyplus.com/home', name: 'Disney+' },
             'hbo': { icon: '🎬', uri: 'https://play.max.com/', name: 'Max' },
             'amazon': { icon: '📦', uri: 'https://www.amazon.com', name: 'Amazon Shopping' },
             'spotify': { icon: '🎵', uri: 'https://open.spotify.com', name: 'Spotify' },
